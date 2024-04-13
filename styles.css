@@ -1,0 +1,45 @@
+body,
+html {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  overflow: hidden;
+  background-color: black;
+  color: white;
+  font-family: Arial, sans-serif;
+}
+
+#solar-system {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+}
+
+.orbit {
+  stroke: #888;
+  fill: none;
+  stroke-dasharray: 3, 3;
+}
+
+.planet {
+  stroke: #fff;
+  stroke-width: 0.5;
+}
+
+.moon {
+  fill: silver;
+  stroke-width: 0;
+}
+
+.asteroid0,
+.asteroid1 {
+  fill: #666; /* Gray color for asteroid and Kuiper belts */
+}
+
+text {
+  font-size: 0.9em;
+  fill: #fff;
+  pointer-events: none;
+  user-select: none;
+}
