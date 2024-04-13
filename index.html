@@ -11,10 +11,29 @@
         canvas {
             display: block;
         }
+
+        #dropdown {
+            background-color: #333;
+            color: #FFF;
+            border: 1px solid #555;
+            padding: 5px 10px;
+            border-radius: 5px;
+            outline: none;
+        }
+
+        #dropdown option {
+            background-color: #666;
+            color: #EEE;
+        }
     </style>
 </head>
 
 <body>
+    <div style="position: absolute; top: 10px; left: 10px; z-index: 100;">
+        <select id="dropdown">
+            <option value="">Select an object to focus on</option>
+        </select>
+    </div>
     <script type="module" src="main.js"></script>
 </body>
 

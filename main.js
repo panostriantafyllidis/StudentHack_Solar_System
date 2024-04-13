@@ -2,25 +2,44 @@ import * as THREE from "three";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
 import { data } from "./data.js";
 
+import { EffectComposer } from "three/addons/postprocessing/EffectComposer.js";
+import { RenderPass } from "three/addons/postprocessing/RenderPass.js";
+import { SMAAPass } from "three/addons/postprocessing/SMAAPass.js";
+import { OutputPass } from "three/addons/postprocessing/OutputPass.js";
+
 const main = function () {
+  // Scene Setup
   const scene = new THREE.Scene();
   const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
   camera.position.z = 150;
   camera.position.y = 120;
-  const cameraDamping = 0.05;
 
-  const renderer = new THREE.WebGLRenderer();
+  const renderer = new THREE.WebGLRenderer({ antialias: true });
   renderer.setSize(window.innerWidth, window.innerHeight);
-  renderer.setPixelRatio(window.devicePixelRatio);
+  renderer.setPixelRatio(window.devicePixelRatio * 1.5);
   renderer.shadowMap.enabled = true;
   document.body.appendChild(renderer.domElement);
 
+  const composer = new EffectComposer(renderer);
+
+  const renderPass = new RenderPass(scene, camera);
+  composer.addPass(renderPass);
+
+  const glitchPass = new SMAAPass();
+  
+
+  const outputPass = new OutputPass();
+  composer.addPass(outputPass);
+
+  // Basic Controls
+  const cameraDamping = 0.05;
   const controls = new OrbitControls(camera, renderer.domElement);
   controls.enableDamping = true;
   controls.dampingFactor = cameraDamping;
   controls.minDistance = 10;
   controls.maxDistance = 500;
 
+  // Responsive Design
   const onWindowResize = function () {
     camera.aspect = window.innerWidth / window.innerHeight;
     camera.updateProjectionMatrix();
@@ -29,14 +48,16 @@ const main = function () {
 
   window.addEventListener("resize", onWindowResize, false);
 
+  // Objects
   const ambientLight = new THREE.AmbientLight(0x404040);
   scene.add(ambientLight);
 
-  const sun = createCelestialBody(data, undefined);
+  const sun = createCelestialBody(data, undefined, 0);
   let selectedPlanet = sun;
   let hasFocused = false;
   scene.add(sun);
 
+  // Movement
   const movement = { forward: false, backward: false, left: false, right: false };
   const velocity = 0.5;
 
@@ -77,6 +98,7 @@ const main = function () {
   document.addEventListener("keydown", onKeyDown);
   document.addEventListener("keyup", onKeyUp);
 
+  // Selection
   const raycaster = new THREE.Raycaster();
   const mouse = new THREE.Vector2();
 
@@ -90,17 +112,29 @@ const main = function () {
     if (intersects.length === 0) return;
     selectedPlanet = intersects[0].object;
     hasFocused = false;
+    document.getElementById("dropdown").value = selectedPlanet.uuid;
   };
 
   document.addEventListener("click", onMouseClick);
 
+  const onDropdownChange = function (event) {
+    const selectedObject = scene.getObjectByProperty("uuid", event.target.value);
+    selectedPlanet = selectedObject;
+    hasFocused = false;
+  };
+
+  document.getElementById("dropdown").addEventListener("change", onDropdownChange);
+
+  // Animation
   const animate = function () {
     requestAnimationFrame(animate);
 
+    // Celestial Movement
     let startingPosition = selectedPlanet ? selectedPlanet.getWorldPosition(new THREE.Vector3()) : undefined;
     updateCelestial(sun, undefined);
     let endingPosition = selectedPlanet ? selectedPlanet.getWorldPosition(new THREE.Vector3()) : undefined;
 
+    // Camera Movement
     let direction = new THREE.Vector3();
     camera.getWorldDirection(direction);
 
@@ -112,6 +146,7 @@ const main = function () {
     if (movement.left) camera.position.sub(right);
     if (movement.right) camera.position.add(right);
 
+    // Camera Focus
     if (selectedPlanet && camera.position.distanceTo(selectedPlanet.getWorldPosition(new THREE.Vector3())) > 400) {
       hasFocused = false;
     }
@@ -133,18 +168,20 @@ const main = function () {
       }
     }
 
+    // Render
     controls.update();
-    renderer.render(scene, camera);
+    composer.render();
   };
 
   animate();
 };
 
-const createCelestialBody = function (data, parent) {
-  const geometry = new THREE.SphereGeometry(data.radius, 32, 32);
+const createCelestialBody = function (data, parent, depth = 0, isLast = false) {
+  const geometry = new THREE.SphereGeometry(data.radius, 64, 64);
   const material = new THREE.MeshPhysicalMaterial({ color: data.color, emissive: data.emissive ? data.emissive.color : null });
   const body = new THREE.Mesh(geometry, material);
 
+  // Stars
   if (data.emissive) {
     const light = new THREE.PointLight(data.emissive.color, data.emissive.intensity, data.emissive.distance, data.emissive.decay);
     light.position.set(0, 0, 0);
@@ -157,6 +194,7 @@ const createCelestialBody = function (data, parent) {
     body.castShadow = true;
   }
 
+  // Flags
   body.isCelestialBody = true;
 
   body.position.set(data.orbitRadius || 0, 0, 0);
@@ -167,40 +205,68 @@ const createCelestialBody = function (data, parent) {
   body.orbitSpeed = data.orbitSpeed;
   body.orbitInclination = data.orbitInclination;
 
+  // Parenting
   if (parent) {
     body.parent = parent;
     parent.add(body);
 
+    // Orbit Line
     if (data.orbitRadius) {
       const points = [];
+      const colors = [];
+
+      const color1 = new THREE.Color(data.color);
+      const color2 = new THREE.Color(0x000000);
+
       for (let i = 0; i <= 360; i++) {
         const radians = (i * Math.PI) / 180;
-        points.push(new THREE.Vector3(data.orbitRadius * Math.cos(radians), 0, data.orbitRadius * Math.sin(radians)));
-      }
-      const geometry = new THREE.BufferGeometry().setFromPoints(points);
+        points.push(new THREE.Vector3(data.orbitRadius * Math.cos(radians), 0, data.orbitRadius * -Math.sin(radians)));
 
-      const material = new THREE.LineDashedMaterial({
-        color: 0x666666,
-        linewidth: 1,
-        scale: 1,
-        dashSize: 1,
-        gapSize: 1,
+        const progress = i / 360;
+        const interpolation = progress < 0.8 ? progress / 0.8 : 1;
+        const color = color1.clone().lerp(color2, interpolation);
+        colors.push(color.r, color.g, color.b);
+      }
+      const orbitGeometry = new THREE.BufferGeometry().setFromPoints(points);
+      orbitGeometry.setAttribute("color", new THREE.Float32BufferAttribute(colors, 3));
+
+      const orbitMaterial = new THREE.LineBasicMaterial({
+        vertexColors: true,
+        linewidth: 2,
+        transparent: true,
+        opacity: 0.75,
       });
 
-      const line = new THREE.LineLoop(geometry, material);
-      line.computeLineDistances();
+      const line = new THREE.LineLoop(orbitGeometry, orbitMaterial);
 
+      // Flags
       line.isOrbit = true;
       if (data.orbitInclination) line.rotation.x = data.orbitInclination;
 
       parent.add(line);
+      body.orbit = line;
     }
   }
 
+  // Dropdown
+  const dropdown = document.getElementById("dropdown");
+  const option = document.createElement("option");
+  option.value = body.uuid;
+
+  let prefix = "";
+  if (depth > 0) {
+    prefix = "│ ".repeat(depth - 1) + (isLast ? "└─ " : "├─ ");
+  }
+  option.textContent = prefix + data.name;
+  dropdown.appendChild(option);
+
+  // Recursion
   if (data.children) {
-    data.children.forEach((data) => {
+    length = data.children.length;
+
+    data.children.forEach((data, index) => {
       if (data.type && data.type === "particles") return createCelestialParticles(data, body);
-      else return createCelestialBody(data, body);
+      else return createCelestialBody(data, body, depth + 1, index === length - 1);
     });
   }
 
@@ -218,7 +284,6 @@ const createCelestialParticles = function (data, parent) {
     points.push(new THREE.Vector3(x, y, z));
   }
 
-
   const geometry = new THREE.BufferGeometry().setFromPoints(points);
   const material = new THREE.PointsMaterial({
     size: data.radius,
@@ -231,11 +296,13 @@ const createCelestialParticles = function (data, parent) {
 
   const particleSystem = new THREE.Points(geometry, material);
 
+  // Flags
   particleSystem.isCelestialParticles = true;
 
   particleSystem.rotation.x = data.orbitInclination || 0;
   particleSystem.rotationSpeed = data.orbitSpeed;
 
+  // Parenting
   if (parent) parent.add(particleSystem);
 
   return particleSystem;
@@ -245,14 +312,18 @@ const updateCelestial = function (celestial) {
   const time = Date.now() * 0.0001;
   const angle = time * celestial.orbitSpeed;
 
+  // Orbit
   if (celestial.orbitRadius) {
     celestial.position.x = celestial.orbitRadius * Math.cos(angle);
     celestial.position.z = celestial.orbitRadius * Math.sin(angle) * Math.cos(celestial.orbitInclination || 0);
     celestial.position.y = celestial.orbitRadius * Math.sin(angle) * -Math.sin(celestial.orbitInclination || 0);
+    celestial.orbit.rotation.y = -angle;
   }
 
+  // Rotation
   if (celestial.rotationSpeed) celestial.rotation.y += celestial.rotationSpeed;
 
+  // Recursion
   if (celestial.children) {
     celestial.children.forEach((child) => {
       if (child.isCelestialBody || child.isCelestialParticles) updateCelestial(child);
