@@ -1,7 +1,7 @@
 import * as THREE from "three";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
 import { data } from "./data.js";
-import { createCelestialBody, createCelestialParticles, createStarField } from "./constructors.js";
+import { createCelestialBody, createStarField } from "./constructors.js";
 
 import { EffectComposer } from "three/addons/postprocessing/EffectComposer.js";
 import { RenderPass } from "three/addons/postprocessing/RenderPass.js";
@@ -10,9 +10,9 @@ import { OutputPass } from "three/addons/postprocessing/OutputPass.js";
 const main = function () {
   // Scene Setup
   const scene = new THREE.Scene();
-  const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 10000);
-  camera.position.z = 150;
+  const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 100000);
   camera.position.y = 120;
+  camera.position.z = 150;
 
   const renderer = new THREE.WebGLRenderer({ antialias: true });
   renderer.setSize(window.innerWidth, window.innerHeight);
@@ -34,7 +34,7 @@ const main = function () {
   controls.enableDamping = true;
   controls.dampingFactor = cameraDamping;
   controls.minDistance = 5;
-  controls.maxDistance = 500;
+  controls.maxDistance = 6000;
 
   // Responsive Design
   const onWindowResize = function () {
@@ -126,7 +126,63 @@ const main = function () {
 
   document.getElementById("dropdown").addEventListener("change", onDropdownChange);
 
+  // Music
+  const music = [
+    "assets/music/track1.mp3",
+    "assets/music/track2.mp3",
+    "assets/music/track3.mp3",
+    "assets/music/track4.mp3",
+    "assets/music/track5.mp3",
+    "assets/music/track6.mp3",
+    "assets/music/track7.mp3",
+  ];
+
+  let currentMusicIndex = 0;
+  const player = document.getElementById("backgroundMusic");
+
+  const playNextTrack = function () {
+    if (currentMusicIndex === music.length - 1) currentMusicIndex = 0;
+    player.src = music[currentMusicIndex];
+    player.play();
+    currentMusicIndex++;
+  };
+
+  player.addEventListener("ended", playNextTrack);
+  playNextTrack();
+
   // Animation
+  let simulationSpeed = 1;
+
+  const onSimulationSpeedChange = function (event) {
+    simulationSpeed = parseFloat(event.target.value);
+    document.getElementById("speedValue").textContent = simulationSpeed;
+  };
+
+  document.getElementById("speedSlider").addEventListener("input", onSimulationSpeedChange);
+
+  const updateCelestial = function (celestial) {
+    const time = Date.now() * 0.0001 * simulationSpeed;
+    const angle = time * celestial.orbitSpeed;
+
+    // Orbit
+    if (celestial.orbitRadius) {
+      celestial.position.x = celestial.orbitRadius * Math.cos(angle);
+      celestial.position.z = celestial.orbitRadius * Math.sin(angle) * Math.cos(celestial.orbitInclination || 0);
+      celestial.position.y = celestial.orbitRadius * Math.sin(angle) * -Math.sin(celestial.orbitInclination || 0);
+      celestial.orbit.rotation.y = -angle;
+    }
+
+    // Rotation
+    if (celestial.rotationSpeed) celestial.rotation.y += celestial.rotationSpeed;
+
+    // Recursion
+    if (celestial.children) {
+      celestial.children.forEach((child) => {
+        if (child.isCelestialBody || child.isCelestialParticles) updateCelestial(child);
+      });
+    }
+  };
+
   const animate = function () {
     requestAnimationFrame(animate);
 
@@ -148,34 +204,41 @@ const main = function () {
     if (movement.right) camera.position.add(right);
 
     // Camera Focus
-    if (selectedPlanet && camera.position.distanceTo(selectedPlanet.getWorldPosition(new THREE.Vector3())) > 400) {
+    if (selectedPlanet && camera.position.distanceTo(selectedPlanet.getWorldPosition(new THREE.Vector3())) > 10000) {
       hasFocused = false;
     }
 
     if (selectedPlanet) {
       const target = selectedPlanet.getWorldPosition(new THREE.Vector3());
-      const delta = new THREE.Vector3().subVectors(endingPosition, startingPosition);
+      const cameraTarget = new THREE.Vector3().copy(target).add(new THREE.Vector3(0, 5, 15));
 
-      camera.position.add(delta);
-
-      if (controls.target.distanceTo(target) < 0.5) {
+      if (controls.target.distanceTo(target) < 0.5 && camera.position.distanceTo(cameraTarget) < 100) {
         hasFocused = true;
       }
 
       if (hasFocused) {
+        const delta = new THREE.Vector3().subVectors(endingPosition, startingPosition);
+        camera.position.add(delta);
         controls.target.add(delta);
       } else {
-        controls.target.lerp(target, cameraDamping);
+        if (simulationSpeed < 30) {
+          camera.position.lerp(cameraTarget, cameraDamping * simulationSpeed);
+          controls.target.lerp(target, cameraDamping * simulationSpeed);
+        } else {
+          camera.position.copy(cameraTarget);
+          controls.target.copy(target);
+          hasFocused = true;
+        }
       }
     }
 
     // Camera Limits
-    if (camera.position.x > 1000) camera.position.x = 1000;
-    if (camera.position.x < -1000) camera.position.x = -1000;
-    if (camera.position.y > 1000) camera.position.y = 1000;
-    if (camera.position.y < -1000) camera.position.y = -1000;
-    if (camera.position.z > 1000) camera.position.z = 1000;
-    if (camera.position.z < -1000) camera.position.z = -1000;
+    if (camera.position.x > 10000) camera.position.x = 10000;
+    if (camera.position.x < -10000) camera.position.x = -10000;
+    if (camera.position.y > 10000) camera.position.y = 10000;
+    if (camera.position.y < -10000) camera.position.y = -10000;
+    if (camera.position.z > 10000) camera.position.z = 10000;
+    if (camera.position.z < -10000) camera.position.z = -10000;
 
     // Render
     controls.update();
@@ -183,29 +246,6 @@ const main = function () {
   };
 
   animate();
-};
-
-const updateCelestial = function (celestial) {
-  const time = Date.now() * 0.0001;
-  const angle = time * celestial.orbitSpeed;
-
-  // Orbit
-  if (celestial.orbitRadius) {
-    celestial.position.x = celestial.orbitRadius * Math.cos(angle);
-    celestial.position.y = celestial.orbitRadius * Math.sin(angle) * -Math.sin(celestial.orbitInclination || 0);
-    celestial.position.z = celestial.orbitRadius * Math.sin(angle) * Math.cos(celestial.orbitInclination || 0);
-    celestial.orbit.rotation.y = -angle;
-  }
-
-  // Rotation
-  if (celestial.rotationSpeed) celestial.rotation.y += celestial.rotationSpeed;
-
-  // Recursion
-  if (celestial.children) {
-    celestial.children.forEach((child) => {
-      if (child.isCelestialBody || child.isCelestialParticles) updateCelestial(child);
-    });
-  }
 };
 
 main();

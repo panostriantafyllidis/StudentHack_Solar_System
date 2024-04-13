@@ -1,8 +1,36 @@
 import * as THREE from "three";
 
 export const createCelestialBody = function (data, parent, depth = 0, isLast = false) {
-  const geometry = new THREE.SphereGeometry(data.radius, 64, 64);
-  const material = new THREE.MeshPhysicalMaterial({ color: data.color, emissive: data.emissive ? data.emissive.color : null });
+
+  let geometry, material;
+  const detail = 12;
+  const loader = new THREE.TextureLoader();
+
+  if (data.detail === 2) {
+    geometry = new THREE.IcosahedronGeometry(data.radius, detail);
+    material = new THREE.MeshPhongMaterial({
+      map: loader.load("../assets/planets/" + data.name + "/map.jpg"),
+      bumpMap: loader.load("../assets/planets/" + data.name + "/bump.jpg"),
+      bumpScale: 10,
+    });
+  } else if (data.detail === 1 && data.emissive) {
+    geometry = new THREE.IcosahedronGeometry(data.radius, detail);
+    material = new THREE.MeshPhongMaterial({
+      map: loader.load("../assets/planets/" + data.name + "/map.jpg"),
+      emissiveMap: loader.load("../assets/planets/" + data.name + "/map.jpg"),
+      emissive: 0xffffff,
+    });
+  } else if (data.detail === 1) {
+
+    geometry = new THREE.IcosahedronGeometry(data.radius, detail);
+    material = new THREE.MeshPhongMaterial({
+      map: loader.load("../assets/planets/" + data.name + "/map.jpg"),
+    });
+  } else {
+    geometry = new THREE.SphereGeometry(data.radius, 64, 64);
+    material = new THREE.MeshPhysicalMaterial({ color: data.color, emissive: data.emissive ? data.emissive.color : null });
+  }
+
   const body = new THREE.Mesh(geometry, material);
 
   // Stars
@@ -67,7 +95,6 @@ export const createCelestialBody = function (data, parent, depth = 0, isLast = f
       // Flags
       line.isOrbit = true;
       if (data.orbitInclination) line.rotation.x = data.orbitInclination;
-      if (data.orbitInclinationAngle) line.rotation.y = data.orbitInclinationAngle;
 
       parent.add(line);
       body.orbit = line;
@@ -158,10 +185,10 @@ export const createCelestialParticles = function (data, parent) {
 };
 
 export const createStarField = function (
-  count = 2500,
+  count = 10000,
   groups = 5,
-  innerRadius = 2000,
-  outerRadius = 3000,
+  innerRadius = 20000,
+  outerRadius = 25000,
   colors = [
     { color: 0xfff8e7, weight: 5 },
     { color: 0xffffff, weight: 3 },
@@ -203,7 +230,7 @@ export const createStarField = function (
     const geometry = new THREE.BufferGeometry().setFromPoints(group.points);
     geometry.setAttribute("color", new THREE.Float32BufferAttribute(group.colors, 3));
     const material = new THREE.PointsMaterial({
-      size: 1 + index,
+      size: 6 * index,
       sizeAttenuation: true,
       vertexColors: true,
       transparent: true,
