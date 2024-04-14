@@ -1,11 +1,6 @@
 import * as THREE from "three";
 
-export const createCelestialBody = function (
-  data,
-  parent,
-  depth = 0,
-  isLast = false
-) {
+export const createCelestialBody = function (data, parent, depth = 0, isLast = false) {
   let geometry, material;
   const detail = 12;
   const loader = new THREE.TextureLoader();
@@ -13,21 +8,21 @@ export const createCelestialBody = function (
   if (data.detail === 2) {
     geometry = new THREE.IcosahedronGeometry(data.radius, detail);
     material = new THREE.MeshPhongMaterial({
-      map: loader.load("../assets/planets/" + data.name + "/map.jpg"),
-      bumpMap: loader.load("../assets/planets/" + data.name + "/bump.jpg"),
+      map: loader.load("/celestials/" + data.name + "/map.jpg"),
+      bumpMap: loader.load("/celestials/" + data.name + "/bump.jpg"),
       bumpScale: 10,
     });
   } else if (data.detail === 1 && data.emissive) {
     geometry = new THREE.IcosahedronGeometry(data.radius, detail);
     material = new THREE.MeshPhongMaterial({
-      map: loader.load("../assets/planets/" + data.name + "/map.jpg"),
-      emissiveMap: loader.load("../assets/planets/" + data.name + "/map.jpg"),
+      map: loader.load("/celestials/" + data.name + "/map.jpg"),
+      emissiveMap: loader.load("/celestials/" + data.name + "/map.jpg"),
       emissive: 0xffffff,
     });
   } else if (data.detail === 1) {
     geometry = new THREE.IcosahedronGeometry(data.radius, detail);
     material = new THREE.MeshPhongMaterial({
-      map: loader.load("../assets/planets/" + data.name + "/map.jpg"),
+      map: loader.load("/celestials/" + data.name + "/map.jpg"),
     });
   } else {
     geometry = new THREE.SphereGeometry(data.radius, 64, 64);
@@ -38,16 +33,10 @@ export const createCelestialBody = function (
   }
 
   const body = new THREE.Mesh(geometry, material);
-  body.name = data.name; // Make sure this line exists
 
   // Stars
   if (data.emissive) {
-    const light = new THREE.PointLight(
-      data.emissive.color,
-      data.emissive.intensity,
-      data.emissive.distance,
-      data.emissive.decay
-    );
+    const light = new THREE.PointLight(data.emissive.color, data.emissive.intensity, data.emissive.distance, data.emissive.decay);
     light.position.set(0, 0, 0);
     light.castShadow = true;
     body.add(light);
@@ -64,6 +53,8 @@ export const createCelestialBody = function (
   body.position.set(data.orbitRadius || 0, 0, 0);
   body.rotation.x = data.inclination || 0;
 
+  body.name = data.name;
+  body.content = data.content;
   body.rotationSpeed = data.rotationSpeed;
   body.orbitRadius = data.orbitRadius;
   body.orbitSpeed = data.orbitSpeed;
@@ -85,13 +76,7 @@ export const createCelestialBody = function (
 
       for (let i = 0; i <= 360; i++) {
         const radians = (i * Math.PI) / 180;
-        points.push(
-          new THREE.Vector3(
-            data.orbitRadius * Math.cos(radians),
-            0,
-            data.orbitRadius * -Math.sin(radians)
-          )
-        );
+        points.push(new THREE.Vector3(data.orbitRadius * Math.cos(radians), 0, data.orbitRadius * -Math.sin(radians)));
 
         const progress = i / 360;
         const interpolation = progress < 0.8 ? progress / 0.8 : 1;
@@ -99,10 +84,7 @@ export const createCelestialBody = function (
         colors.push(color.r, color.g, color.b);
       }
       const orbitGeometry = new THREE.BufferGeometry().setFromPoints(points);
-      orbitGeometry.setAttribute(
-        "color",
-        new THREE.Float32BufferAttribute(colors, 3)
-      );
+      orbitGeometry.setAttribute("color", new THREE.Float32BufferAttribute(colors, 3));
 
       const orbitMaterial = new THREE.LineBasicMaterial({
         vertexColors: true,
@@ -139,10 +121,8 @@ export const createCelestialBody = function (
     length = data.children.length;
 
     data.children.forEach((data, index) => {
-      if (data.type && data.type === "particles")
-        return createCelestialParticles(data, body);
-      else
-        return createCelestialBody(data, body, depth + 1, index === length - 1);
+      if (data.type && data.type === "particles") return createCelestialParticles(data, body);
+      else return createCelestialBody(data, body, depth + 1, index === length - 1);
     });
   }
 
@@ -153,11 +133,7 @@ export const createCelestialParticles = function (data, parent) {
   const colors = [];
   for (let i = 0; i < 10; i++) {
     const color = new THREE.Color(data.color);
-    color.offsetHSL(
-      Math.random() * 0.2 - 0.1,
-      Math.random() * 0.2 - 0.1,
-      Math.random() * 0.2 - 0.1
-    );
+    color.offsetHSL(Math.random() * 0.2 - 0.1, Math.random() * 0.2 - 0.1, Math.random() * 0.2 - 0.1);
     colors.push(color);
   }
 
@@ -168,9 +144,7 @@ export const createCelestialParticles = function (data, parent) {
   }));
 
   for (let i = 0; i < data.ringVolume; i++) {
-    const radius =
-      Math.random() * (data.orbitOuterRadius - data.orbitInnerRadius) +
-      data.orbitInnerRadius;
+    const radius = Math.random() * (data.orbitOuterRadius - data.orbitInnerRadius) + data.orbitInnerRadius;
     const angle = Math.random() * Math.PI * 2;
     const x = Math.cos(angle) * radius;
     const y = Math.random() * data.orbitThickness - data.orbitThickness / 2;
@@ -187,10 +161,7 @@ export const createCelestialParticles = function (data, parent) {
 
   particleGroups.forEach((group, index) => {
     const geometry = new THREE.BufferGeometry().setFromPoints(group.points);
-    geometry.setAttribute(
-      "color",
-      new THREE.Float32BufferAttribute(group.colors, 3)
-    );
+    geometry.setAttribute("color", new THREE.Float32BufferAttribute(group.colors, 3));
     const material = new THREE.PointsMaterial({
       size: sizeWeights[index] * data.radius,
       sizeAttenuation: true,
@@ -207,8 +178,7 @@ export const createCelestialParticles = function (data, parent) {
   particleSystem.isCelestialParticles = true;
 
   if (data.orbitInclination) particleSystem.rotation.x = data.orbitInclination;
-  if (data.orbitInclinationAngle)
-    particleSystem.rotation.y = data.orbitInclinationAngle;
+  if (data.orbitInclinationAngle) particleSystem.rotation.y = data.orbitInclinationAngle;
   particleSystem.rotationSpeed = data.orbitSpeed;
 
   // Parenting
@@ -240,9 +210,7 @@ export const createStarField = function (
   }));
 
   const totalWeight = colors.reduce((sum, color) => sum + color.weight, 0);
-  const weightedColors = colors.flatMap((color) =>
-    Array(color.weight).fill(color.color)
-  );
+  const weightedColors = colors.flatMap((color) => Array(color.weight).fill(color.color));
 
   for (let i = 0; i < count; i++) {
     const radius = Math.random() * (outerRadius - innerRadius) + innerRadius;
@@ -255,9 +223,7 @@ export const createStarField = function (
     const groupIndex = Math.floor(Math.random() * groups);
     starGroups[groupIndex].points.push(new THREE.Vector3(x, y, z));
 
-    const color = new THREE.Color(
-      weightedColors[Math.floor(Math.random() * totalWeight)]
-    );
+    const color = new THREE.Color(weightedColors[Math.floor(Math.random() * totalWeight)]);
     starGroups[groupIndex].colors.push(color.r, color.g, color.b);
   }
 
@@ -265,10 +231,7 @@ export const createStarField = function (
 
   starGroups.forEach((group, index) => {
     const geometry = new THREE.BufferGeometry().setFromPoints(group.points);
-    geometry.setAttribute(
-      "color",
-      new THREE.Float32BufferAttribute(group.colors, 3)
-    );
+    geometry.setAttribute("color", new THREE.Float32BufferAttribute(group.colors, 3));
     const material = new THREE.PointsMaterial({
       size: 6 * index,
       sizeAttenuation: true,

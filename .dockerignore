@@ -1,0 +1,4 @@
+node_modules/**
+.gitlab-ci.yml
+.gitignore
+download-music.sh
