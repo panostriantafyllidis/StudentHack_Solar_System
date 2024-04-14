@@ -1,59 +1,84 @@
 <!DOCTYPE html>
-<html>
-
-<head>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Simple Solar System</title>
     <style>
-        body {
-            margin: 0;
-        }
-
-        canvas {
-            display: block;
-        }
-
-        #controls {
-            background-color: #333;
-            padding: 10px;
-            border-radius: 5px;
-            position: absolute;
-            top: 10px;
-            left: 10px;
-            z-index: 100;
-            font-family: Arial, sans-serif;
-            font-size: 14px;
-        }
-
-        #speedControls {
-            display: flex;
-            padding: 5px;
-            flex-direction: row;
-            align-items: center;
-        }
-
-        .control-item {
-            margin-bottom: 5px;
-            color: #FFF;
-            background-color: #333;
-            border: none;
-            outline: none;
-        }
+      body {
+        margin: 0;
+      }
+      canvas {
+        display: block;
+      }
+      #controls {
+        background-color: #333;
+        padding: 10px;
+        border-radius: 5px;
+        position: absolute;
+        top: 10px;
+        left: 10px;
+        z-index: 100;
+        font-family: Arial, sans-serif;
+        font-size: 14px;
+      }
+      #speedControls {
+        display: flex;
+        padding: 5px;
+        flex-direction: row;
+        align-items: center;
+      }
+      .control-item {
+        margin-bottom: 5px;
+        color: #fff;
+        background-color: #333;
+        border: none;
+        outline: none;
+      }
+      #infoWindow {
+        display: none;
+        position: fixed;
+        top: 10px; /* Slightly up from the top of the window */
+        right: 10px; /* On the right side of the window */
+        width: 300px;
+        height: auto; /* Adjusts based on content */
+        background-color: white;
+        border: 1px solid black;
+        padding: 10px;
+        z-index: 100;
+        overflow: hidden; /* Prevents content from overflowing */
+      }
     </style>
-</head>
-
-<body>
+  </head>
+  <body>
     <div id="controls">
-        <div id="speedControls">
-            <label for="speedSlider" class="control-item">Simulation Speed:</label>
-            <input type="range" id="speedSlider" class="control-item" min="0" max="100" step="0.1" value="1">
-            <span id="speedValue" class="control-item">1x</span>
-        </div>
-        <select id="dropdown" class="control-item">
-            <option value="">Select an object to focus on</option>
-        </select>
+      <div id="speedControls">
+        <label for="speedSlider" class="control-item">Simulation Speed:</label>
+        <input
+          type="range"
+          id="speedSlider"
+          class="control-item"
+          min="0"
+          max="100"
+          step="0.1"
+          value="1"
+        />
+        <span id="speedValue" class="control-item">1x</span>
+      </div>
+      <select id="dropdown" class="control-item">
+        <option value="">Select an object to focus on</option>
+      </select>
     </div>
     <audio id="backgroundMusic" preload="auto" playsinline></audio>
     <script type="module" src="js/main.js"></script>
-</body>
-
+    <div id="infoWindow">
+      <h3 id="infoTitle">Title</h3>
+      <p id="infoContent">Content</p>
+      <button
+        onclick="document.getElementById('infoWindow').style.display='none'"
+      >
+        Close
+      </button>
+    </div>
+  </body>
 </html>

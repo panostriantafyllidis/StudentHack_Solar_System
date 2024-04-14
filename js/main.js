@@ -10,7 +10,12 @@ import { OutputPass } from "three/addons/postprocessing/OutputPass.js";
 const main = function () {
   // Scene Setup
   const scene = new THREE.Scene();
-  const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 100000);
+  const camera = new THREE.PerspectiveCamera(
+    75,
+    window.innerWidth / window.innerHeight,
+    0.1,
+    100000
+  );
   camera.position.y = 120;
   camera.position.z = 150;
 
@@ -59,7 +64,12 @@ const main = function () {
   scene.add(starField);
 
   // Movement
-  const movement = { forward: false, backward: false, left: false, right: false };
+  const movement = {
+    forward: false,
+    backward: false,
+    left: false,
+    right: false,
+  };
   const velocity = 0.5;
 
   const onKeyDown = function (event) {
@@ -99,16 +109,37 @@ const main = function () {
   document.addEventListener("keydown", onKeyDown);
   document.addEventListener("keyup", onKeyUp);
 
+  async function displayInfoForObject(planetName) {
+    const scriptPath = `./info_windows/${planetName.toLowerCase()}.js`;
+
+    try {
+      const module = await import(scriptPath);
+      module.displayInfo(); // Assuming each module exports a function named `displayInfo`
+    } catch (error) {
+      console.error(
+        "Error loading the information module for:",
+        planetName,
+        error
+      );
+    }
+  }
+
   // Selection
   const raycaster = new THREE.Raycaster();
   const mouse = new THREE.Vector2();
 
+  let autoFocusEnabled = true; // New flag to control auto-focusing behavior
+
   const onMouseClick = function (event) {
+    if (event.button !== 0) return; // Ignore if not left click
+
     mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
     mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
 
     raycaster.setFromCamera(mouse, camera);
-    const intersects = raycaster.intersectObjects(scene.children, true).filter((intersect) => intersect.object.isCelestialBody);
+    const intersects = raycaster
+      .intersectObjects(scene.children, true)
+      .filter((intersect) => intersect.object.isCelestialBody);
 
     if (intersects.length === 0) return;
     selectedPlanet = intersects[0].object;
@@ -116,15 +147,43 @@ const main = function () {
     document.getElementById("dropdown").value = selectedPlanet.uuid;
   };
 
+  document.addEventListener("contextmenu", function (event) {
+    event.preventDefault(); // Prevents the default context menu from popping up
+    hasFocused = false; // Releases the focus lock
+    autoFocusEnabled = false; // Disable auto-focusing
+    controls.target.copy(new THREE.Vector3(0, 0, 0)); // Optional: reset target
+  });
+
+  document.addEventListener("dblclick", function (event) {
+    mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+    mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+
+    raycaster.setFromCamera(mouse, camera);
+    const intersects = raycaster
+      .intersectObjects(scene.children, true)
+      .filter((intersect) => intersect.object.isCelestialBody);
+
+    if (intersects.length > 0) {
+      selectedPlanet = intersects[0].object;
+      displayInfoForObject(selectedPlanet.name); // Display info on double-click
+    }
+  });
+
   document.addEventListener("click", onMouseClick);
 
   const onDropdownChange = function (event) {
-    const selectedObject = scene.getObjectByProperty("uuid", event.target.value);
+    const selectedObject = scene.getObjectByProperty(
+      "uuid",
+      event.target.value
+    );
     selectedPlanet = selectedObject;
     hasFocused = false;
+    displayInfoForObject(selectedPlanet.name); // Display info on selection from dropdown
   };
 
-  document.getElementById("dropdown").addEventListener("change", onDropdownChange);
+  document
+    .getElementById("dropdown")
+    .addEventListener("change", onDropdownChange);
 
   // Music
   const music = [
@@ -158,7 +217,9 @@ const main = function () {
     document.getElementById("speedValue").textContent = simulationSpeed;
   };
 
-  document.getElementById("speedSlider").addEventListener("input", onSimulationSpeedChange);
+  document
+    .getElementById("speedSlider")
+    .addEventListener("input", onSimulationSpeedChange);
 
   const updateCelestial = function (celestial) {
     const time = Date.now() * 0.0001 * simulationSpeed;
@@ -167,18 +228,26 @@ const main = function () {
     // Orbit
     if (celestial.orbitRadius) {
       celestial.position.x = celestial.orbitRadius * Math.cos(angle);
-      celestial.position.z = celestial.orbitRadius * Math.sin(angle) * Math.cos(celestial.orbitInclination || 0);
-      celestial.position.y = celestial.orbitRadius * Math.sin(angle) * -Math.sin(celestial.orbitInclination || 0);
+      celestial.position.z =
+        celestial.orbitRadius *
+        Math.sin(angle) *
+        Math.cos(celestial.orbitInclination || 0);
+      celestial.position.y =
+        celestial.orbitRadius *
+        Math.sin(angle) *
+        -Math.sin(celestial.orbitInclination || 0);
       celestial.orbit.rotation.y = -angle;
     }
 
     // Rotation
-    if (celestial.rotationSpeed) celestial.rotation.y += celestial.rotationSpeed;
+    if (celestial.rotationSpeed)
+      celestial.rotation.y += celestial.rotationSpeed;
 
     // Recursion
     if (celestial.children) {
       celestial.children.forEach((child) => {
-        if (child.isCelestialBody || child.isCelestialParticles) updateCelestial(child);
+        if (child.isCelestialBody || child.isCelestialParticles)
+          updateCelestial(child);
       });
     }
   };
@@ -187,16 +256,23 @@ const main = function () {
     requestAnimationFrame(animate);
 
     // Celestial Movement
-    let startingPosition = selectedPlanet ? selectedPlanet.getWorldPosition(new THREE.Vector3()) : undefined;
+    let startingPosition = selectedPlanet
+      ? selectedPlanet.getWorldPosition(new THREE.Vector3())
+      : undefined;
     updateCelestial(sun, undefined);
-    let endingPosition = selectedPlanet ? selectedPlanet.getWorldPosition(new THREE.Vector3()) : undefined;
+    let endingPosition = selectedPlanet
+      ? selectedPlanet.getWorldPosition(new THREE.Vector3())
+      : undefined;
 
     // Camera Movement
     let direction = new THREE.Vector3();
     camera.getWorldDirection(direction);
 
     let forward = direction.multiplyScalar(velocity);
-    let right = new THREE.Vector3().crossVectors(camera.up, direction).normalize().multiplyScalar(velocity);
+    let right = new THREE.Vector3()
+      .crossVectors(camera.up, direction)
+      .normalize()
+      .multiplyScalar(velocity);
 
     if (movement.forward) camera.position.add(forward);
     if (movement.backward) camera.position.sub(forward);
@@ -204,20 +280,33 @@ const main = function () {
     if (movement.right) camera.position.add(right);
 
     // Camera Focus
-    if (selectedPlanet && camera.position.distanceTo(selectedPlanet.getWorldPosition(new THREE.Vector3())) > 10000) {
+    if (
+      selectedPlanet &&
+      camera.position.distanceTo(
+        selectedPlanet.getWorldPosition(new THREE.Vector3())
+      ) > 10000
+    ) {
       hasFocused = false;
     }
 
-    if (selectedPlanet) {
+    if (selectedPlanet && autoFocusEnabled) {
       const target = selectedPlanet.getWorldPosition(new THREE.Vector3());
-      const cameraTarget = new THREE.Vector3().copy(target).add(new THREE.Vector3(0, 5, 15));
+      const cameraTarget = new THREE.Vector3()
+        .copy(target)
+        .add(new THREE.Vector3(0, 5, 15));
 
-      if (controls.target.distanceTo(target) < 0.5 && camera.position.distanceTo(cameraTarget) < 100) {
+      if (
+        controls.target.distanceTo(target) < 1 &&
+        camera.position.distanceTo(cameraTarget) < 100
+      ) {
         hasFocused = true;
       }
 
       if (hasFocused) {
-        const delta = new THREE.Vector3().subVectors(endingPosition, startingPosition);
+        const delta = new THREE.Vector3().subVectors(
+          endingPosition,
+          startingPosition
+        );
         camera.position.add(delta);
         controls.target.add(delta);
       } else {
@@ -244,7 +333,6 @@ const main = function () {
     controls.update();
     composer.render();
   };
-
   animate();
 };
 
