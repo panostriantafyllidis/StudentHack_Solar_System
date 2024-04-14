@@ -52,6 +52,30 @@ export const data = {
   radius: 15,
   children: [
     {
+      type: "particles",
+      name: "Asteroid Belt",
+      color: 0xaaaaaa,
+      radius: 0.1,
+      orbitInnerRadius: 300,
+      orbitOuterRadius: 400,
+      orbitThickness: 0.1,
+      ringVolume: 4000,
+      orbitSpeed: 0.0001,
+      orbitInclination: Math.PI,
+    },
+    {
+      type: "particles",
+      name: "Kuiper belt",
+      color: 0xaaaaaa,
+      radius: 0.1,
+      orbitInnerRadius: 4800,
+      orbitOuterRadius: 5800,
+      orbitThickness: 0.1,
+      ringVolume: 4000,
+      orbitSpeed: 0.00001,
+      orbitInclination: Math.PI,
+    },
+    {
       name: "Mercury",
       color: 0xaaaaaa,
       radius: 0.38,
@@ -99,6 +123,7 @@ export const data = {
           radius: 0.1,
           orbitRadius: 1.81,
           orbitSpeed: 0.0214,
+          detail: 2,
         },
         {
           name: "Deimos",
@@ -106,6 +131,7 @@ export const data = {
           radius: 0.08,
           orbitRadius: 3.02,
           orbitSpeed: 0.0135,
+          detail: 2,
         },
       ],
     },
@@ -123,6 +149,7 @@ export const data = {
           radius: 0.3,
           orbitRadius: 3.28,
           orbitSpeed: 0.1733,
+          detail: 2,
         },
         {
           name: "Europa",
@@ -130,6 +157,7 @@ export const data = {
           radius: 0.25,
           orbitRadius: 4.45,
           orbitSpeed: 0.1374,
+          detail: 2,
         },
         {
           name: "Ganymede",
@@ -137,6 +165,7 @@ export const data = {
           radius: 0.4,
           orbitRadius: 5.72,
           orbitSpeed: 0.1088,
+          detail: 2,
         },
         {
           name: "Callisto",
@@ -144,6 +173,7 @@ export const data = {
           radius: 0.25,
           orbitRadius: 6.5,
           orbitSpeed: 1.26,
+          detail: 2,
         },
       ],
     },
@@ -173,6 +203,7 @@ export const data = {
           radius: 0.4,
           orbitRadius: 5.82,
           orbitSpeed: 0.0557,
+          detail: 2,
         },
         {
           name: "Rhea",
@@ -180,6 +211,7 @@ export const data = {
           radius: 0.12,
           orbitRadius: 7.2,
           orbitSpeed: 0.0848,
+          detail: 2,
         },
       ],
     },
@@ -197,6 +229,7 @@ export const data = {
           radius: 0.2,
           orbitRadius: 3,
           orbitSpeed: 0.0364,
+          detail: 2,
         },
         {
           name: "Oberon",
@@ -204,6 +237,7 @@ export const data = {
           radius: 0.18,
           orbitRadius: 5,
           orbitSpeed: 0.0315,
+          detail: 2,
         },
         {
           name: "Umbriel",
@@ -211,6 +245,7 @@ export const data = {
           radius: 0.15,
           orbitRadius: 7,
           orbitSpeed: 0.0467,
+          detail: 2,
         },
       ],
     },
@@ -228,6 +263,7 @@ export const data = {
           radius: 0.3,
           orbitRadius: 3.24,
           orbitSpeed: 0.0439,
+          detail: 2,
         },
       ],
     },
@@ -237,6 +273,7 @@ export const data = {
       radius: 0.18,
       orbitRadius: 3948,
       orbitSpeed: 0.0047,
+      detail: 1,
       children: [
         {
           name: "Charon",
@@ -244,6 +281,7 @@ export const data = {
           radius: 0.09,
           orbitRadius: 1.9,
           orbitSpeed: 0.021,
+          detail: 2,
         },
       ],
     },
