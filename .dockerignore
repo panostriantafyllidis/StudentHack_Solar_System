@@ -1,4 +1,5 @@
 node_modules/**
 .gitlab-ci.yml
+.github-ci.yml
 .gitignore
 download-music.sh
