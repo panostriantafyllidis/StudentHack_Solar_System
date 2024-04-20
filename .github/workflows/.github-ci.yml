@@ -26,14 +26,17 @@ jobs:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
 
+      - name: Prepare lowercase repository name
+        run: echo "REPO_NAME=$(echo '${{ github.repository_owner }}/${{ github.event.repository.name }}' | tr '[:upper:]' '[:lower:]')" >> $GITHUB_ENV
+
       - name: Build and push Docker image
         uses: docker/build-push-action@v2
         with:
           context: .
           file: ./Dockerfile
           push: true
-          tags: ${{ github.repository_owner }}/${{ github.event.repository.name }}:${{ github.ref == 'refs/heads/main' && 'StudentHack_Solar_System_v3.0' || github.ref_name }}
-          cache-from: type=registry,ref=${{ github.repository_owner }}/${{ github.event.repository.name }}:cache
+          tags: ${{ env.REPO_NAME }}:${{ github.ref == 'refs/heads/main' && 'studenthack_solar_system_v3.0' || github.ref_name }}
+          cache-from: type=registry,ref=${{ env.REPO_NAME }}:cache
           cache-to: type=inline
 
       - name: Image digest output
