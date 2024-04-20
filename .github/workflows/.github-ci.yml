@@ -4,38 +4,37 @@ on:
   push:
     branches:
       - main
-      - feature/**
+      - "*"
   pull_request:
     branches:
       - main
 
 jobs:
-  build:
+  build-and-push:
     runs-on: ubuntu-latest
 
     steps:
       - uses: actions/checkout@v3
 
-      - name: Login to Docker Hub
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v1
+
+      - name: Log in to Docker Hub
         uses: docker/login-action@v1
         with:
+          registry: docker.io
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
 
-      - name: Set image tag based on branch
-        id: prep
-        run: |
-          if [ "${{ github.ref }}" == "refs/heads/main" ]; then
-            echo "Running on default branch, tag = 'latest'"
-            echo "::set-output name=tag::latest"
-          else
-            BRANCH_NAME=$(echo ${{ github.ref_name }} | sed 's/[^a-zA-Z0-9]/-/g')
-            echo "Running on branch '${{ github.ref_name }}', tag = '$BRANCH_NAME'"
-            echo "::set-output name=tag::$BRANCH_NAME"
-          fi
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v2
+        with:
+          context: .
+          file: ./Dockerfile
+          push: true
+          tags: ${{ github.repository_owner.lower }}/studenthacksolar:${{ github.ref == 'refs/heads/main' && 'latest' || github.ref_name }}
+          cache-from: type=registry,ref=${{ github.repository_owner.lower }}/studenthacksolar:cache
+          cache-to: type=inline
 
-      - name: Build the Docker image
-        run: docker build . --file Dockerfile --tag Dockerfile:${{ steps.prep.outputs.tag }}
-
-      - name: Push the Docker image
-        run: docker push my-image-name:${{ steps.prep.outputs.tag }}
+      - name: Image digest output
+        run: echo "The image digest is ${{ steps.build-and-push.outputs.digest }}"
