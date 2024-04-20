@@ -35,7 +35,7 @@ jobs:
           fi
 
       - name: Build the Docker image
-        run: docker build . --file Dockerfile --tag my-image-name:${{ steps.prep.outputs.tag }}
+        run: docker build . --file Dockerfile --tag Dockerfile:${{ steps.prep.outputs.tag }}
 
       - name: Push the Docker image
         run: docker push my-image-name:${{ steps.prep.outputs.tag }}
