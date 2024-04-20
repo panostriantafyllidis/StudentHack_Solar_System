@@ -8,7 +8,7 @@ on:
   pull_request:
     branches:
       - main
-  workflow_dispatch: # This line adds the manual trigger option
+  workflow_dispatch:
 
 jobs:
   build-and-push:
@@ -28,7 +28,7 @@ jobs:
           password: ${{ secrets.DOCKER_PASSWORD }}
 
       - name: Prepare lowercase repository name
-        run: echo "REPO_NAME=$(echo '${{ github.repository_owner }}/${{ github.event.repository.name }}' | tr '[:upper:]' '[:lower:]')" >> $GITHUB_ENV
+        run: echo "REPO_NAME=$(echo 'panostrian/studenthack_solar_system' | tr '[:upper:]' '[:lower:]')" >> $GITHUB_ENV
 
       - name: Build and push Docker image
         uses: docker/build-push-action@v2
@@ -36,7 +36,7 @@ jobs:
           context: .
           file: ./Dockerfile
           push: true
-          tags: ${{ env.REPO_NAME }}:${{ github.ref == 'refs/heads/main' && 'studenthack_solar_system_v3.0' || github.ref_name }}
+          tags: ${{ env.REPO_NAME }}:studenthack_solar_system_v3.0
           cache-from: type=registry,ref=${{ env.REPO_NAME }}:cache
           cache-to: type=inline
 
